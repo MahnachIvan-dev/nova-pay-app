@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="theme-color" content="#0A0A1A"/>
+<title>Nova Pay</title>
+<link rel="stylesheet" href="css/style.css"/>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+
+<!-- Фоновые звёзды -->
+<div id="bgStars"></div>
+
+<!-- ══════════ ЗАГРУЗКА ══════════ -->
+<div id="loader">
+  <div class="loader-logo">N</div>
+  <div class="loader-ring"></div>
+  <div class="loader-text">Загружаем Nova Pay...</div>
+</div>
+
+<!-- ══════════ ПРИЛОЖЕНИЕ ══════════ -->
+<div id="app">
+
+  <!-- ШАПКА -->
+  <header class="header">
+    <div class="header-logo">
+      <div class="logo-icon">N</div>
+      <div class="logo-text">Nova Pay</div>
+    </div>
+    <div class="header-right">
+      <div id="headerBalance" style="font-size:20px;font-weight:800;color:var(--violet);">0 NVC</div>
+      <div class="header-bal-label">БАЛАНС</div>
+    </div>
+  </header>
+
+  <!-- ════ ГЛАВНАЯ ════ -->
+  <div class="page active" id="page-home">
+
+    <!-- Карточка -->
+    <div id="cardContainer"></div>
+
+    <!-- Быстрые действия -->
+    <div class="quick-grid">
+      <button class="quick-btn" onclick="App.showTransferModal()">
+        <div class="quick-icon">📤</div>
+        <span class="quick-label">Перевод</span>
+      </button>
+      <button class="quick-btn" onclick="App.showReceiveModal()">
+        <div class="quick-icon">📥</div>
+        <span class="quick-label">Получить</span>
+      </button>
+      <button class="quick-btn" onclick="App.showBuyModal()">
+        <div class="quick-icon">💫</div>
+        <span class="quick-label">Купить NVC</span>
+      </button>
+      <button class="quick-btn" onclick="App.showPayServicesModal()">
+        <div class="quick-icon">🛒</div>
+        <span class="quick-label">Услуги</span>
+      </button>
+    </div>
+
+    <!-- Статистика -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-val" id="statEarned" style="color:var(--success);">0</div>
+        <div class="stat-label">Получено</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="statSpent" style="color:var(--danger);">0</div>
+        <div class="stat-label">Потрачено</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="statRefs" style="color:var(--violet);">0</div>
+        <div class="stat-label">Рефералы</div>
+      </div>
+    </div>
+
+    <!-- Последние транзакции -->
+    <div class="section-title" style="margin-top:4px;">Последние операции</div>
+    <div id="recentTxList"></div>
+
+  </div>
+
+  <!-- ════ КАРТОЧКИ ════ -->
+  <div class="page" id="page-cards">
+    <div class="page-title">Карточки</div>
+    <div class="page-subtitle">Выберите свой тариф</div>
+
+    <div id="tierCard_starter"></div>
+    <div id="tierCard_creative"></div>
+    <div id="tierCard_elite"></div>
+  </div>
+
+  <!-- ════ ИСТОРИЯ ════ -->
+  <div class="page" id="page-history">
+    <div class="page-title">История</div>
+    <div class="chips" style="margin-bottom:16px;">
+      <button class="chip active" onclick="App.setTxFilter('all',this)">Все</button>
+      <button class="chip" onclick="App.setTxFilter('plus',this)">📥 Входящие</button>
+      <button class="chip" onclick="App.setTxFilter('minus',this)">📤 Исходящие</button>
+    </div>
+    <div id="historyList"></div>
+  </div>
+
+  <!-- ════ БОНУСЫ ════ -->
+  <div class="page" id="page-bonuses">
+    <div class="page-title">Бонусы</div>
+    <div class="page-subtitle">Зарабатывайте NVC</div>
+    <div id="bonusPageContent"></div>
+  </div>
+
+  <!-- ════ ПРОФИЛЬ ════ -->
+  <div class="page" id="page-profile">
+    <div class="page-title">Профиль</div>
+    <div id="profileContent"></div>
+  </div>
+
+  <!-- ════ ЧЕК ════ -->
+  <div class="page" id="page-check">
+    <div class="page-title">💰 Денежный чек</div>
+    <div id="checkPageContent"></div>
+  </div>
+
+  <!-- НАВИГАЦИЯ -->
+  <nav class="nav">
+    <button class="nav-item active" data-page="home" onclick="App.navigate('home')">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span class="nav-label">Главная</span>
+    </button>
+    <button class="nav-item" data-page="cards" onclick="App.navigate('cards')">
+      <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      <span class="nav-label">Карточки</span>
+    </button>
+    <button class="nav-item" data-page="history" onclick="App.navigate('history')">
+      <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span class="nav-label">История</span>
+    </button>
+    <button class="nav-item" data-page="bonuses" onclick="App.navigate('bonuses')">
+      <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <span class="nav-label">Бонусы</span>
+    </button>
+    <button class="nav-item" data-page="profile" onclick="App.navigate('profile')">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="nav-label">Профиль</span>
+    </button>
+  </nav>
+
+</div><!-- /app -->
+
+<!-- МОДАЛ -->
+<div id="modalOverlay" onclick="App.closeModal()">
+  <div id="modalBody" onclick="event.stopPropagation()"></div>
+</div>
+
+<!-- АНИМАЦИЯ ОПЛАТЫ -->
+<div id="payAnimation"></div>
+
+<!-- СКРИПТЫ -->
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/card.js"></script>
+<script src="js/checks.js"></script>
+<script src="js/transactions.js"></script>
+<script src="js/bonuses.js"></script>
+<script src="js/app.js"></script>
+<script src="js/admin.js"></script> 
+
+</body>
+</html>
