@@ -5,43 +5,410 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
 <meta name="theme-color" content="#0A0A1A"/>
 <title>Nova Pay</title>
-<link rel="stylesheet" href="css/style.css"/>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://nova-pay-app.vercel.app/"></script>
+
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0A0A1A;--bg2:#0F0F2A;--bg3:#141430;
+  --card-bg:rgba(255,255,255,0.04);
+  --card-border:rgba(124,58,237,0.18);
+  --purple:#7C3AED;--violet:#A78BFA;--pink:#C026D3;
+  --gold:#F59E0B;--success:#10B981;--danger:#EF4444;
+  --text:#F8F8FF;--text2:#9898B8;
+  --radius:20px;--radius-sm:12px;
+}
+html,body{
+  height:100%;background:var(--bg);color:var(--text);
+  font-family:'Inter',-apple-system,sans-serif;
+  overflow-x:hidden;-webkit-font-smoothing:antialiased;
+}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--purple);border-radius:2px}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes toastOut{to{opacity:0;transform:translateX(-50%) translateY(-10px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes twinkle{0%,100%{opacity:var(--op,0.4)}50%{opacity:calc(var(--op,0.4)*0.2)}}
+@keyframes shimmerMove{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes glow{0%,100%{box-shadow:0 0 20px rgba(124,58,237,0.3)}50%{box-shadow:0 0 50px rgba(124,58,237,0.7),0 0 80px rgba(192,38,211,0.3)}}
+@keyframes ripple{from{transform:scale(0);opacity:0.5}to{transform:scale(4);opacity:0}}
+
+#bgStars{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+
+#loader{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:20px;
+  z-index:9999;transition:opacity .5s;
+}
+.loader-logo{
+  width:90px;height:90px;
+  background:linear-gradient(135deg,var(--purple),var(--pink));
+  border-radius:28px;display:flex;align-items:center;justify-content:center;
+  font-size:44px;color:#fff;font-weight:900;
+  animation:glow 2s infinite,float 3s ease-in-out infinite;
+}
+.loader-ring{
+  width:44px;height:44px;
+  border:3px solid rgba(124,58,237,0.2);
+  border-top-color:var(--purple);
+  border-radius:50%;animation:spin .8s linear infinite;
+}
+.loader-text{color:var(--text2);font-size:14px;font-weight:500}
+
+#app{display:none;min-height:100vh;padding-bottom:calc(80px + env(safe-area-inset-bottom));position:relative;z-index:1}
+#app.visible{animation:fadeIn .4s ease}
+
+.header{
+  position:sticky;top:0;z-index:100;
+  background:rgba(10,10,26,0.92);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--card-border);
+  padding:14px 20px;display:flex;align-items:center;justify-content:space-between;
+}
+.header-logo{display:flex;align-items:center;gap:10px}
+.logo-icon{
+  width:38px;height:38px;
+  background:linear-gradient(135deg,var(--purple),var(--pink));
+  border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:900;color:#fff;
+  box-shadow:0 4px 16px rgba(124,58,237,0.4);
+}
+.logo-text{
+  font-size:20px;font-weight:900;letter-spacing:-0.5px;
+  background:linear-gradient(90deg,var(--violet),var(--pink));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.header-right{text-align:right}
+#headerBalance{
+  font-size:20px;font-weight:800;color:var(--violet);
+  text-shadow:0 0 20px rgba(167,139,250,0.4);
+}
+.header-bal-label{font-size:10px;color:var(--text2);letter-spacing:1px}
+
+.page{display:none;padding:16px 16px 0}
+.page.active{display:block;animation:fadeIn .3s ease}
+
+.card-wrap{
+  width:100%;max-width:380px;margin:16px auto;
+  aspect-ratio:1.586;position:relative;
+  border-radius:22px;overflow:hidden;
+  box-shadow:0 30px 80px rgba(0,0,0,0.7),0 0 60px rgba(124,58,237,0.25);
+  cursor:pointer;animation:float 5s ease-in-out infinite;
+  transition:transform .3s;
+}
+.card-wrap:active{transform:scale(0.98)}
+.card-bg{
+  position:absolute;inset:0;width:100%;height:100%;
+  background:linear-gradient(135deg,#1E1B4B 0%,#4C1D95 50%,#7C3AED 100%);
+}
+.card-bg.creative{background:linear-gradient(135deg,#2D1B69 0%,#7C3AED 40%,#C026D3 100%)}
+.card-bg.elite{background:linear-gradient(135deg,#050505 0%,#1E1B4B 40%,#B76E79 100%)}
+.card-stars{
+  position:absolute;inset:0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%,rgba(255,255,255,0.6),transparent),
+    radial-gradient(1px 1px at 60% 20%,rgba(255,255,255,0.4),transparent),
+    radial-gradient(1px 1px at 80% 60%,rgba(255,255,255,0.5),transparent),
+    radial-gradient(1.5px 1.5px at 40% 80%,rgba(255,255,255,0.3),transparent),
+    radial-gradient(1px 1px at 90% 10%,rgba(255,255,255,0.7),transparent);
+}
+.card-shimmer{
+  position:absolute;inset:0;
+  background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.06) 50%,transparent 60%);
+  background-size:200% 100%;animation:shimmerMove 4s linear infinite;
+}
+.card-content{
+  position:absolute;inset:0;padding:18px 22px;
+  display:flex;flex-direction:column;justify-content:space-between;z-index:2;
+}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start}
+.card-brand-name{
+  font-size:14px;font-weight:900;letter-spacing:3px;
+  color:rgba(255,255,255,0.95);text-shadow:0 2px 8px rgba(0,0,0,0.5);
+}
+.card-brand-sub{
+  display:block;font-size:8px;color:rgba(255,255,255,0.4);
+  letter-spacing:1.5px;margin-top:2px;
+}
+.card-tier-badge{
+  padding:4px 10px;border-radius:20px;
+  font-size:10px;font-weight:700;letter-spacing:1px;
+  backdrop-filter:blur(10px);
+  background:rgba(124,58,237,0.35);
+  border:1px solid rgba(124,58,237,0.5);color:#C4B5FD;
+}
+.card-tier-badge.creative{
+  background:rgba(192,38,211,0.35);
+  border-color:rgba(192,38,211,0.5);color:#F0ABFC;
+}
+.card-tier-badge.elite{
+  background:rgba(245,158,11,0.35);
+  border-color:rgba(245,158,11,0.6);color:#FCD34D;
+}
+.card-chip{
+  width:34px;height:26px;
+  background:linear-gradient(135deg,#C8A84B,#E8D07A,#B8880C);
+  border-radius:5px;position:relative;
+}
+.card-chip::before,.card-chip::after{
+  content:"";position:absolute;background:rgba(0,0,0,0.15);
+}
+.card-chip::before{
+  top:50%;left:10%;right:10%;height:1px;transform:translateY(-50%);
+}
+.card-chip::after{
+  left:50%;top:10%;bottom:10%;width:1px;transform:translateX(-50%);
+}
+.card-number{
+  font-size:16px;font-weight:500;letter-spacing:3px;
+  color:rgba(255,255,255,0.9);
+  text-shadow:0 2px 12px rgba(0,0,0,0.7);
+}
+.card-bottom{display:flex;justify-content:space-between;align-items:flex-end}
+.card-label{
+  font-size:9px;color:rgba(255,255,255,0.4);
+  letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;
+}
+.card-holder-name{
+  font-size:13px;font-weight:600;color:rgba(255,255,255,0.9);
+  text-transform:uppercase;letter-spacing:0.5px;
+  text-shadow:0 1px 6px rgba(0,0,0,0.6);
+  max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.card-balance-block{text-align:right}
+.card-balance-amount{
+  font-size:24px;font-weight:900;color:#fff;
+  text-shadow:0 0 30px rgba(167,139,250,0.9),0 2px 8px rgba(0,0,0,0.7);
+  line-height:1;
+}
+.card-balance-cur{
+  font-size:11px;color:rgba(255,255,255,0.5);
+  letter-spacing:2px;font-weight:600;
+}
+
+.quick-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0;
+}
+.quick-btn{
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  background:var(--card-bg);border:1px solid var(--card-border);
+  border-radius:var(--radius-sm);padding:14px 6px;
+  cursor:pointer;transition:.2s;font-family:inherit;
+}
+.quick-btn:active{
+  transform:scale(0.93);background:rgba(124,58,237,0.15);
+  border-color:rgba(124,58,237,0.4);
+}
+.quick-icon{
+  width:46px;height:46px;border-radius:14px;
+  background:linear-gradient(135deg,rgba(124,58,237,0.2),rgba(192,38,211,0.2));
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+}
+.quick-label{
+  font-size:10px;font-weight:600;color:var(--text2);
+  text-align:center;line-height:1.3;
+}
+
+.glass{
+  background:var(--card-bg);border:1px solid var(--card-border);
+  border-radius:var(--radius);padding:18px;backdrop-filter:blur(10px);
+}
+.glass-sm{
+  background:rgba(255,255,255,0.03);border:1px solid rgba(124,58,237,0.12);
+  border-radius:var(--radius-sm);padding:12px;
+}
+
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:15px 20px;border:none;border-radius:var(--radius-sm);
+  font-size:15px;font-weight:700;font-family:inherit;
+  cursor:pointer;transition:.2s;position:relative;overflow:hidden;
+  letter-spacing:0.2px;
+}
+.btn:active{transform:scale(0.97)}
+.btn-primary{
+  background:linear-gradient(135deg,var(--purple),var(--pink));
+  color:#fff;box-shadow:0 4px 24px rgba(124,58,237,0.45);
+}
+.btn-secondary{
+  background:var(--card-bg);border:1px solid var(--card-border);color:var(--text);
+}
+.btn-success{background:linear-gradient(135deg,#059669,#10B981);color:#fff}
+.btn-danger{background:linear-gradient(135deg,#DC2626,#EF4444);color:#fff}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  white-space:nowrap;padding:7px 16px;border-radius:20px;
+  font-size:13px;font-weight:600;
+  border:1px solid var(--card-border);
+  background:var(--card-bg);color:var(--text2);
+  cursor:pointer;transition:.2s;font-family:inherit;
+}
+.chip.active{
+  background:linear-gradient(135deg,var(--purple),var(--pink));
+  border-color:transparent;color:#fff;
+}
+
+.nav{
+  position:fixed;bottom:0;left:0;right:0;
+  background:rgba(10,10,26,0.96);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-top:1px solid var(--card-border);
+  display:flex;z-index:100;
+  padding:8px 0 max(8px,env(safe-area-inset-bottom));
+}
+.nav-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:8px 4px;border:none;background:none;
+  color:var(--text2);cursor:pointer;transition:.2s;font-family:inherit;
+}
+.nav-item.active{color:var(--violet)}
+.nav-item svg{
+  width:22px;height:22px;stroke:currentColor;fill:none;
+  stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+}
+.nav-label{font-size:10px;font-weight:600}
+
+.section-title{
+  font-size:12px;font-weight:700;color:var(--text2);
+  letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;
+}
+.page-title{font-size:24px;font-weight:900;margin-bottom:4px;letter-spacing:-0.5px}
+.page-subtitle{font-size:14px;color:var(--text2);margin-bottom:16px}
+
+.tx-item{
+  display:flex;align-items:center;gap:14px;padding:14px 16px;
+  background:var(--card-bg);border:1px solid var(--card-border);
+  border-radius:14px;margin-bottom:8px;
+}
+.tx-icon{
+  width:44px;height:44px;flex-shrink:0;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);
+}
+.tx-info{flex:1;min-width:0}
+.tx-desc{
+  font-size:14px;font-weight:600;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.tx-date{font-size:11px;color:var(--text2);margin-top:3px}
+.tx-amount{font-size:16px;font-weight:800;flex-shrink:0}
+.tx-plus{color:var(--success)}
+.tx-minus{color:var(--danger)}
+
+.stats-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;
+}
+.stat-card{
+  background:var(--card-bg);border:1px solid var(--card-border);
+  border-radius:var(--radius-sm);padding:14px 10px;text-align:center;
+}
+.stat-val{font-size:18px;font-weight:800;margin-bottom:4px}
+.stat-label{font-size:10px;color:var(--text2);font-weight:600}
+
+.empty-state{text-align:center;padding:48px 20px}
+.empty-icon{font-size:52px;margin-bottom:12px}
+.empty-title{font-size:17px;font-weight:700;margin-bottom:6px}
+.empty-desc{font-size:14px;color:var(--text2);line-height:1.5}
+
+#modalOverlay{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,0.7);align-items:flex-end;transition:opacity .3s;
+}
+#modalOverlay.visible{opacity:1}
+#modalBody{
+  width:100%;background:var(--bg2);
+  border-radius:28px 28px 0 0;
+  padding:20px 20px max(24px,env(safe-area-inset-bottom));
+  animation:slideUp .35s cubic-bezier(.4,0,.2,1);
+  max-height:90vh;overflow-y:auto;
+}
+.modal-handle{
+  width:44px;height:4px;border-radius:2px;
+  background:rgba(255,255,255,0.15);margin:0 auto 20px;
+}
+.modal-title{
+  font-size:20px;font-weight:800;
+  margin-bottom:20px;letter-spacing:-0.3px;
+}
+
+.form-group{margin-bottom:16px}
+.form-label{
+  display:block;font-size:11px;font-weight:700;
+  color:var(--text2);letter-spacing:1px;
+  text-transform:uppercase;margin-bottom:8px;
+}
+.form-input{
+  width:100%;padding:14px 16px;
+  background:var(--card-bg);border:1.5px solid var(--card-border);
+  border-radius:var(--radius-sm);color:var(--text);font-size:16px;
+  font-family:inherit;outline:none;transition:.2s;
+}
+.form-input:focus{border-color:var(--purple)}
+.form-input::placeholder{color:var(--text2)}
+
+#payAnimation{
+  display:none;position:fixed;inset:0;z-index:300;
+  background:rgba(0,0,0,0.92);align-items:center;justify-content:center;
+}
+
+.profile-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:11px 0;border-bottom:1px solid rgba(124,58,237,0.08);font-size:14px;
+}
+.profile-row:last-child{border-bottom:none}
+.profile-row span:first-child{color:var(--text2)}
+
+.tier-preview{
+  height:120px;border-radius:16px;overflow:hidden;
+  margin-bottom:16px;position:relative;
+  background:linear-gradient(135deg,#1E1B4B,#4C1D95);
+}
+.tier-preview.creative{background:linear-gradient(135deg,#2D1B69,#C026D3)}
+.tier-preview.elite{background:linear-gradient(135deg,#050505,#B76E79)}
+
+@media(max-width:380px){
+  .card-number{font-size:14px;letter-spacing:2px}
+  .card-balance-amount{font-size:20px}
+  .quick-icon{width:38px;height:38px;font-size:18px}
+}
+</style>
 </head>
 <body>
 
-<!-- Фоновые звёзды -->
 <div id="bgStars"></div>
 
-<!-- ══════════ ЗАГРУЗКА ══════════ -->
 <div id="loader">
   <div class="loader-logo">N</div>
   <div class="loader-ring"></div>
   <div class="loader-text">Загружаем Nova Pay...</div>
 </div>
 
-<!-- ══════════ ПРИЛОЖЕНИЕ ══════════ -->
 <div id="app">
-
-  <!-- ШАПКА -->
   <header class="header">
     <div class="header-logo">
       <div class="logo-icon">N</div>
       <div class="logo-text">Nova Pay</div>
     </div>
     <div class="header-right">
-      <div id="headerBalance" style="font-size:20px;font-weight:800;color:var(--violet);">0 NVC</div>
+      <div id="headerBalance">0 NVC</div>
       <div class="header-bal-label">БАЛАНС</div>
     </div>
   </header>
 
-  <!-- ════ ГЛАВНАЯ ════ -->
   <div class="page active" id="page-home">
-
-    <!-- Карточка -->
     <div id="cardContainer"></div>
 
-    <!-- Быстрые действия -->
     <div class="quick-grid">
       <button class="quick-btn" onclick="App.showTransferModal()">
         <div class="quick-icon">📤</div>
@@ -61,42 +428,34 @@
       </button>
     </div>
 
-    <!-- Статистика -->
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-val" id="statEarned" style="color:var(--success);">0</div>
+        <div class="stat-val" id="statEarned" style="color:var(--success)">0</div>
         <div class="stat-label">Получено</div>
       </div>
       <div class="stat-card">
-        <div class="stat-val" id="statSpent" style="color:var(--danger);">0</div>
+        <div class="stat-val" id="statSpent" style="color:var(--danger)">0</div>
         <div class="stat-label">Потрачено</div>
       </div>
       <div class="stat-card">
-        <div class="stat-val" id="statRefs" style="color:var(--violet);">0</div>
+        <div class="stat-val" id="statRefs" style="color:var(--violet)">0</div>
         <div class="stat-label">Рефералы</div>
       </div>
     </div>
 
-    <!-- Последние транзакции -->
-    <div class="section-title" style="margin-top:4px;">Последние операции</div>
+    <div class="section-title">Последние операции</div>
     <div id="recentTxList"></div>
-
   </div>
 
-  <!-- ════ КАРТОЧКИ ════ -->
   <div class="page" id="page-cards">
     <div class="page-title">Карточки</div>
     <div class="page-subtitle">Выберите свой тариф</div>
-
-    <div id="tierCard_starter"></div>
-    <div id="tierCard_creative"></div>
-    <div id="tierCard_elite"></div>
+    <div id="tiersContainer"></div>
   </div>
 
-  <!-- ════ ИСТОРИЯ ════ -->
   <div class="page" id="page-history">
     <div class="page-title">История</div>
-    <div class="chips" style="margin-bottom:16px;">
+    <div class="chips" style="margin-bottom:16px">
       <button class="chip active" onclick="App.setTxFilter('all',this)">Все</button>
       <button class="chip" onclick="App.setTxFilter('plus',this)">📥 Входящие</button>
       <button class="chip" onclick="App.setTxFilter('minus',this)">📤 Исходящие</button>
@@ -104,26 +463,17 @@
     <div id="historyList"></div>
   </div>
 
-  <!-- ════ БОНУСЫ ════ -->
   <div class="page" id="page-bonuses">
     <div class="page-title">Бонусы</div>
     <div class="page-subtitle">Зарабатывайте NVC</div>
-    <div id="bonusPageContent"></div>
+    <div id="bonusContent"></div>
   </div>
 
-  <!-- ════ ПРОФИЛЬ ════ -->
   <div class="page" id="page-profile">
     <div class="page-title">Профиль</div>
     <div id="profileContent"></div>
   </div>
 
-  <!-- ════ ЧЕК ════ -->
-  <div class="page" id="page-check">
-    <div class="page-title">💰 Денежный чек</div>
-    <div id="checkPageContent"></div>
-  </div>
-
-  <!-- НАВИГАЦИЯ -->
   <nav class="nav">
     <button class="nav-item active" data-page="home" onclick="App.navigate('home')">
       <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -146,26 +496,602 @@
       <span class="nav-label">Профиль</span>
     </button>
   </nav>
+</div>
 
-</div><!-- /app -->
-
-<!-- МОДАЛ -->
 <div id="modalOverlay" onclick="App.closeModal()">
   <div id="modalBody" onclick="event.stopPropagation()"></div>
 </div>
 
-<!-- АНИМАЦИЯ ОПЛАТЫ -->
 <div id="payAnimation"></div>
 
-<!-- СКРИПТЫ -->
-<script src="js/config.js"></script>
-<script src="js/api.js"></script>
-<script src="js/card.js"></script>
-<script src="js/checks.js"></script>
-<script src="js/transactions.js"></script>
-<script src="js/bonuses.js"></script>
-<script src="js/app.js"></script>
-<script src="js/admin.js"></script> 
+<script>
+// ═══════════════════════════════════════════════════════════════
+// ⚠️ НАСТРОЙКИ — ЗАМЕНИ НА СВОИ ДАННЫЕ !!!
+// ═══════════════════════════════════════════════════════════════
 
+const CONFIG = {
+  JSONBIN_KEY:  "$2b$10$ЗАМЕНИ_НА_СВОЙ_MASTER_KEY_ИЗ_JSONBIN",
+  BIN_USERS:    "ЗАМЕНИ_НА_ID_БИНА_USERS",
+  BIN_CARDS:    "ЗАМЕНИ_НА_ID_БИНА_CARDS",
+  BIN_TX:       "ЗАМЕНИ_НА_ID_БИНА_TRANSACTIONS",
+  BIN_CHECKS:   "ЗАМЕНИ_НА_ID_БИНА_CHECKS",
+  BIN_PENDING:  "ЗАМЕНИ_НА_ID_БИНА_PENDING",
+  BOT_USERNAME: "NovaPay_Bot",
+  ORDERS_BOT:   "NovaOrders_Bot",
+  OWNER_ID:     8269807543,
+  PAID_SERVICES:{
+    music_track:{name:"🎵 Авторский трек",price:150},
+    design_sticker:{name:"😄 Стикер-пак",price:100},
+    video_anim:{name:"✨ Анимация и моушн",price:200}
+  },
+  STARS_RATES:[
+    {stars:50,nvc:50,label:""},
+    {stars:100,nvc:110,label:""},
+    {stars:250,nvc:300,label:"🔥 Выгодно"},
+    {stars:500,nvc:650,label:"👑 Лучший"}
+  ]
+};
+
+// ═══════════════════════════════════════════════════════════════
+// УТИЛИТЫ
+// ═══════════════════════════════════════════════════════════════
+
+const Utils = {
+  maskCard:(n)=>{if(!n)return"•••• •••• •••• ••••";const p=n.split(" ");return`${p[0]} •••• •••• ${p[3]}`},
+  fmtDate:(iso)=>{if(!iso)return"—";try{return new Date(iso).toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric"})}catch(e){return iso.slice(0,10)}},
+  fmtDT:(iso)=>{if(!iso)return"—";try{return new Date(iso).toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}catch(e){return iso.slice(0,16)}},
+  sleep:(ms)=>new Promise(r=>setTimeout(r,ms)),
+  toast:(text,type="info")=>{
+    const colors={info:"rgba(124,58,237,0.95)",success:"rgba(16,185,129,0.95)",error:"rgba(239,68,68,0.95)",warning:"rgba(245,158,11,0.95)"};
+    document.querySelectorAll(".nova-toast").forEach(t=>t.remove());
+    const t=document.createElement("div");
+    t.className="nova-toast";
+    t.style.cssText=`position:fixed;top:76px;left:50%;transform:translateX(-50%);background:${colors[type]||colors.info};color:#fff;padding:12px 24px;border-radius:14px;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;z-index:9999;white-space:nowrap;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,0.4);animation:toastIn .3s ease`;
+    t.textContent=text;
+    document.body.appendChild(t);
+    setTimeout(()=>{t.style.animation="toastOut .3s ease forwards";setTimeout(()=>t.remove(),300)},2800);
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// ЗВУКИ
+// ═══════════════════════════════════════════════════════════════
+
+const Sound = {
+  _ctx:null,
+  _getCtx(){if(!this._ctx)try{this._ctx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}return this._ctx},
+  _play(freq,gain,dur,type="sine"){
+    try{const ctx=this._getCtx();if(!ctx)return;
+    const osc=ctx.createOscillator(),g=ctx.createGain();
+    osc.connect(g);g.connect(ctx.destination);
+    osc.type=type;osc.frequency.setValueAtTime(freq,ctx.currentTime);
+    g.gain.setValueAtTime(gain,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+dur);
+    osc.start(ctx.currentTime);osc.stop(ctx.currentTime+dur);}catch(e){}
+  },
+  async payment(){const notes=[523,659,784,1047];for(let i=0;i<notes.length;i++){await Utils.sleep(i*80);this._play(notes[i],0.18,0.4)}},
+  async transfer(){this._play(440,0.2,0.25);await Utils.sleep(160);this._play(880,0.15,0.35)},
+  error(){this._play(220,0.2,0.3,"sawtooth");setTimeout(()=>this._play(180,0.15,0.3,"sawtooth"),150)},
+  async bonus(){const steps=[523,659,784,1047,1319];for(let i=0;i<steps.length;i++){await Utils.sleep(i*60);this._play(steps[i],0.12,0.25)}},
+  click(){this._play(800,0.05,0.08)}
+};
+
+// ═══════════════════════════════════════════════════════════════
+// API
+// ═══════════════════════════════════════════════════════════════
+
+const API = {
+  _cache:{},_ct:{},TTL:4000,
+  h:()=>({"X-Master-Key":CONFIG.JSONBIN_KEY,"Content-Type":"application/json","X-Bin-Versioning":"false"}),
+  async get(bin){
+    const now=Date.now();
+    if(this._cache[bin]&&(now-this._ct[bin])<this.TTL)return this._cache[bin];
+    try{
+      const r=await fetch(`https://api.jsonbin.io/v3/b/${bin}/latest`,{headers:this.h()});
+      if(!r.ok)throw new Error("HTTP "+r.status);
+      const d=await r.json();
+      this._cache[bin]=d.record||{};this._ct[bin]=now;
+      return this._cache[bin];
+    }catch(e){console.error("get",e);return this._cache[bin]||{}}
+  },
+  async put(bin,data){
+    this._cache[bin]=data;this._ct[bin]=Date.now();
+    try{
+      const r=await fetch(`https://api.jsonbin.io/v3/b/${bin}`,{method:"PUT",headers:this.h(),body:JSON.stringify(data)});
+      return r.ok;
+    }catch(e){console.error("put",e);return false}
+  },
+  inv(bin){delete this._cache[bin];delete this._ct[bin]},
+  async getUser(uid){const d=await this.get(CONFIG.BIN_USERS);return d.users?.[String(uid)]||null},
+  async getCard(id){const d=await this.get(CONFIG.BIN_CARDS);return d.cards?.[id]||null},
+  async getUserTx(uid){const d=await this.get(CONFIG.BIN_TX);return(d.transactions||[]).filter(t=>t.from_id==uid||t.to_id==uid).reverse()},
+  async addTx(from,to,amount,type,desc){
+    const d=await this.get(CONFIG.BIN_TX);
+    if(!d.transactions)d.transactions=[];
+    d.transactions.push({tx_id:"TX-"+Date.now(),from_id:from,to_id:to,amount,currency:"NVC",type,description:desc,status:"completed",created_at:new Date().toISOString()});
+    if(d.transactions.length>1000)d.transactions=d.transactions.slice(-1000);
+    await this.put(CONFIG.BIN_TX,d);
+  },
+  async updateBal(uid,delta,desc){
+    const d=await this.get(CONFIG.BIN_USERS);
+    if(!d.users?.[String(uid)])return null;
+    const u=d.users[String(uid)];
+    const nb=Math.max(0,(u.balance||0)+delta);
+    d.users[String(uid)].balance=nb;
+    if(delta>0)d.users[String(uid)].total_earned=(u.total_earned||0)+delta;
+    else d.users[String(uid)].total_spent=(u.total_spent||0)+Math.abs(delta);
+    await this.put(CONFIG.BIN_USERS,d);
+    await this.addTx(delta<0?parseInt(uid):0,delta>0?parseInt(uid):0,Math.abs(delta),delta>0?"bonus":"payment",desc);
+    return nb;
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// APP
+// ═══════════════════════════════════════════════════════════════
+
+const App = {
+  state:{uid:null,user:null,card:null,transactions:[],page:"home",txFilter:"all"},
+
+  async init(){
+    const tg=window.Telegram?.WebApp;
+    if(tg){tg.ready();tg.expand();tg.setHeaderColor("#0A0A1A");tg.setBackgroundColor("#0A0A1A")}
+    const params=new URLSearchParams(location.search);
+    this.state.uid=params.get("uid")||tg?.initDataUnsafe?.user?.id||null;
+    this._createStars();
+    if(!this.state.uid){
+      this._showError("Откройте через Telegram бота Nova Pay");
+      return;
+    }
+    try{
+      const user=await API.getUser(this.state.uid);
+      if(!user){
+        this._showError("Аккаунт не найден. Запустите бота @"+CONFIG.BOT_USERNAME);
+        return;
+      }
+      this.state.user=user;
+      this.state.card=await API.getCard(user.card_id);
+      this.state.transactions=await API.getUserTx(this.state.uid);
+      this._showApp();
+      this.renderAll();
+      this._startPolling();
+    }catch(e){console.error(e);this._showError("Ошибка загрузки")}
+  },
+
+  _startPolling(){
+    setInterval(async()=>{
+      if(document.hidden)return;
+      try{
+        API.inv(CONFIG.BIN_USERS);
+        const u=await API.getUser(this.state.uid);
+        if(!u)return;
+        if(u.balance!==this.state.user.balance){
+          const diff=u.balance-this.state.user.balance;
+          this.state.user=u;
+          this.state.transactions=await API.getUserTx(this.state.uid);
+          this.renderHeader();this.renderHome();
+          if(this.state.page==="history")this.renderHistory();
+          if(diff>0){Utils.toast(`💰 +${diff} NVC зачислено!`,"success");Sound.bonus()}
+        }
+      }catch(e){}
+    },15000);
+  },
+
+  renderAll(){this.renderHeader();this.renderHome()},
+
+  renderHeader(){
+    const el=document.getElementById("headerBalance");
+    if(el)el.textContent=`${this.state.user?.balance||0} NVC`;
+  },
+
+  renderHome(){
+    this._renderCard();
+    this._renderTx(this.state.transactions.slice(0,5),"recentTxList");
+    const u=this.state.user;
+    document.getElementById("statEarned").textContent=u.total_earned||0;
+    document.getElementById("statSpent").textContent=u.total_spent||0;
+    document.getElementById("statRefs").textContent=u.referral_count||0;
+  },
+
+  _renderCard(){
+    const u=this.state.user,c=this.state.card;
+    const tier=u.card_tier||"starter";
+    const tierLabels={starter:{emoji:"🟣",label:"STARTER"},creative:{emoji:"💜",label:"CREATIVE"},elite:{emoji:"👑",label:"NOVA ELITE"}};
+    const t=tierLabels[tier];
+    const num=c?.card_number||"0000 0000 0000 0000";
+    document.getElementById("cardContainer").innerHTML=`
+      <div class="card-wrap" onclick="App._flipCard(this)">
+        <div class="card-bg ${tier==='creative'?'creative':tier==='elite'?'elite':''}"></div>
+        <div class="card-stars"></div>
+        <div class="card-shimmer"></div>
+        <div class="card-content">
+          <div class="card-top">
+            <div>
+              <div class="card-brand-name">NOVA PAY</div>
+              <span class="card-brand-sub">NOVA CREATIVE STUDIO</span>
+            </div>
+            <div class="card-tier-badge ${tier==='creative'?'creative':tier==='elite'?'elite':''}">${t.emoji} ${t.label}</div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div class="card-chip"></div>
+          </div>
+          <div class="card-number" data-full="${num}" data-masked="${Utils.maskCard(num)}" data-shown="false">${Utils.maskCard(num)}</div>
+          <div class="card-bottom">
+            <div>
+              <div class="card-label">Держатель</div>
+              <div class="card-holder-name">${(u.full_name||"NOVA USER").toUpperCase()}</div>
+            </div>
+            <div class="card-balance-block">
+              <div class="card-label">Баланс</div>
+              <div class="card-balance-amount">${u.balance||0}</div>
+              <div class="card-balance-cur">NVC</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--text2);margin-top:8px">👆 Нажмите чтобы показать/скрыть номер</div>
+    `;
+  },
+
+  _flipCard(el){
+    const n=el.querySelector(".card-number");
+    const shown=n.dataset.shown==="true";
+    n.textContent=shown?n.dataset.masked:n.dataset.full;
+    n.dataset.shown=String(!shown);
+    Sound.click();
+    Utils.toast(shown?"🔒 Номер скрыт":"🔓 Номер показан");
+  },
+
+  _renderTx(list,cid){
+    const el=document.getElementById(cid);
+    if(!el)return;
+    if(!list.length){
+      el.innerHTML=`<div class="empty-state"><div class="empty-icon">💸</div><div class="empty-title">Транзакций нет</div></div>`;
+      return;
+    }
+    const icons={bonus:"🎁",transfer:"💸",payment:"🛒",check:"🎰"};
+    el.innerHTML=list.map(t=>{
+      const inc=t.to_id==this.state.uid;
+      const sign=inc?"+":"−";
+      const cls=inc?"tx-plus":"tx-minus";
+      const icon=icons[t.type]||"💫";
+      return `<div class="tx-item">
+        <div class="tx-icon">${icon}</div>
+        <div class="tx-info">
+          <div class="tx-desc">${t.description||t.type}</div>
+          <div class="tx-date">${Utils.fmtDT(t.created_at)}</div>
+        </div>
+        <div class="tx-amount ${cls}">${sign}${t.amount} NVC</div>
+      </div>`;
+    }).join("");
+  },
+
+  navigate(name){
+    Sound.click();
+    this.state.page=name;
+    document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+    document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));
+    document.getElementById(`page-${name}`)?.classList.add("active");
+    document.querySelector(`[data-page="${name}"]`)?.classList.add("active");
+    switch(name){
+      case"cards":this.renderCards();break;
+      case"history":this.renderHistory();break;
+      case"bonuses":this.renderBonuses();break;
+      case"profile":this.renderProfile();break;
+    }
+  },
+
+  renderCards(){
+    const u=this.state.user;
+    const tiers=[
+      {key:"starter",name:"Starter",price:0,emoji:"🟣",feats:["Базовые переводы","Оплата услуг","Еженедельный бонус"]},
+      {key:"creative",name:"Creative",price:200,emoji:"💜",feats:["Всё из Starter","Приоритет поддержки","+10% к бонусам"]},
+      {key:"elite",name:"Nova Elite",price:500,emoji:"👑",feats:["Всё из Creative","VIP поддержка","Эксклюзивные конкурсы","+25% к бонусам"]}
+    ];
+    document.getElementById("tiersContainer").innerHTML=tiers.map(t=>{
+      const isCur=u.card_tier===t.key;
+      const canBuy=!isCur&&u.balance>=t.price;
+      return `<div class="glass" style="margin-bottom:14px;${isCur?'border-color:var(--success)':''}">
+        <div class="tier-preview ${t.key==='creative'?'creative':t.key==='elite'?'elite':''}">
+          <div class="card-stars"></div>
+          <div class="card-shimmer"></div>
+          <div style="position:absolute;top:12px;left:14px;font-size:11px;font-weight:900;letter-spacing:3px;color:rgba(255,255,255,0.9)">NOVA PAY</div>
+          <div style="position:absolute;top:12px;right:12px" class="card-tier-badge ${t.key==='creative'?'creative':t.key==='elite'?'elite':''}">${t.emoji} ${t.name.toUpperCase()}</div>
+          ${isCur?'<div style="position:absolute;bottom:12px;left:14px;background:rgba(16,185,129,0.3);border:1px solid rgba(16,185,129,0.5);color:#6EE7B7;font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px">✅ АКТИВНА</div>':''}
+        </div>
+        <ul style="list-style:none;margin-bottom:16px">
+          ${t.feats.map(f=>`<li style="display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(255,255,255,0.8);margin-bottom:8px"><span style="color:var(--violet);font-size:10px">✦</span>${f}</li>`).join("")}
+        </ul>
+        <div style="text-align:center">
+          <div style="font-size:28px;font-weight:800;color:#fff;margin-bottom:12px">${t.price===0?"Бесплатно":`${t.price} <span style="font-size:16px;color:var(--violet)">NVC</span>`}</div>
+          ${isCur?'<button class="btn btn-success" disabled>✅ Ваша карточка</button>':canBuy?`<button class="btn btn-primary" onclick="App.buyCard('${t.key}')">Получить ${t.emoji}</button>`:`<button class="btn btn-secondary" disabled>Нужно ${t.price} NVC</button>`}
+        </div>
+      </div>`;
+    }).join("");
+  },
+
+  renderHistory(){
+    let txs=this.state.transactions;
+    if(this.state.txFilter==="plus")txs=txs.filter(t=>t.to_id==this.state.uid);
+    if(this.state.txFilter==="minus")txs=txs.filter(t=>t.from_id==this.state.uid);
+    this._renderTx(txs,"historyList");
+  },
+
+  setTxFilter(f,btn){
+    this.state.txFilter=f;
+    document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+    btn.classList.add("active");
+    this.renderHistory();
+  },
+
+  renderBonuses(){
+    const u=this.state.user;
+    const last=new Date(u.last_weekly_bonus||"2000-01-01");
+    const next=new Date(last.getTime()+7*86400000);
+    const can=new Date()>=next;
+    const days=Math.max(0,Math.ceil((next-new Date())/86400000));
+    document.getElementById("bonusContent").innerHTML=`
+      <div class="glass" style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div>
+            <div style="font-size:16px;font-weight:700;margin-bottom:4px">🗓 Еженедельный</div>
+            <div style="font-size:13px;color:var(--text2)">Каждые 7 дней</div>
+          </div>
+          <div style="font-size:32px;font-weight:900;background:linear-gradient(135deg,var(--violet),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent">20</div>
+        </div>
+        ${can?`<button class="btn btn-primary" onclick="App.claimWeekly()">🎁 Получить 20 NVC</button>`:`<div style="text-align:center;color:var(--text2);font-size:13px">⏳ Через <b style="color:var(--violet)">${days} дн.</b></div>`}
+      </div>
+      <div class="glass" style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div>
+            <div style="font-size:16px;font-weight:700;margin-bottom:4px">👥 Рефералы</div>
+            <div style="font-size:13px;color:var(--text2)">50 NVC за друга</div>
+          </div>
+          <div style="font-size:32px;font-weight:900;color:var(--gold)">50</div>
+        </div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:12px">Приглашено: <b style="color:var(--text)">${u.referral_count||0}</b></div>
+        <button class="btn btn-secondary" onclick="App.copyRefLink()">🔗 Скопировать ссылку</button>
+      </div>
+      <div class="glass">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px">🏆 Ещё способы</div>
+        <div class="glass-sm" style="display:flex;justify-content:space-between;margin-bottom:8px">
+          <span>🏅 Победа в конкурсе</span><span style="color:var(--gold);font-weight:800">+100 NVC</span>
+        </div>
+        <div class="glass-sm" style="display:flex;justify-content:space-between">
+          <span>🎁 Чеки от админа</span><span style="color:var(--pink);font-weight:800">∞ NVC</span>
+        </div>
+      </div>
+    `;
+  },
+
+  async claimWeekly(){
+    const u=this.state.user;
+    const last=new Date(u.last_weekly_bonus||"2000-01-01");
+    if(new Date()<new Date(last.getTime()+7*86400000)){Sound.error();return Utils.toast("⏳ Не время","error")}
+    const d=await API.get(CONFIG.BIN_USERS);
+    d.users[String(this.state.uid)].last_weekly_bonus=new Date().toISOString();
+    await API.put(CONFIG.BIN_USERS,d);
+    const nb=await API.updateBal(this.state.uid,20,"Еженедельный бонус");
+    this.state.user.balance=nb;
+    this.state.user.last_weekly_bonus=new Date().toISOString();
+    Sound.bonus();
+    Utils.toast("🎁 +20 NVC!","success");
+    this.renderAll();
+    this.renderBonuses();
+  },
+
+  async copyRefLink(){
+    const link=`https://t.me/${CONFIG.BOT_USERNAME}?start=${this.state.user.referral_code}`;
+    try{await navigator.clipboard.writeText(link)}catch(e){}
+    Sound.click();Utils.toast("✅ Скопировано!","success");
+  },
+
+  renderProfile(){
+    const u=this.state.user,c=this.state.card;
+    const tierN={starter:"Starter",creative:"Creative",elite:"Nova Elite"};
+    const tierE={starter:"🟣",creative:"💜",elite:"👑"};
+    document.getElementById("profileContent").innerHTML=`
+      <div class="glass" style="text-align:center;margin-bottom:14px;padding:28px 20px">
+        <div style="font-size:60px;margin-bottom:12px">👤</div>
+        <div style="font-size:20px;font-weight:800">${u.full_name}</div>
+        <div style="color:var(--text2);margin-top:4px;font-size:14px">@${u.username||"—"}</div>
+        <div style="margin-top:12px"><code style="background:rgba(124,58,237,0.2);padding:5px 12px;border-radius:10px;font-size:13px">${u.telegram_id}</code></div>
+      </div>
+      <div class="glass" style="margin-bottom:14px">
+        <div class="section-title">💳 Карточка</div>
+        <div class="profile-row"><span>Тариф</span><span>${tierE[u.card_tier]} <b>${tierN[u.card_tier]}</b></span></div>
+        <div class="profile-row"><span>Номер</span><span style="font-size:13px">${Utils.maskCard(c?.card_number)}</span></div>
+        <div class="profile-row"><span>Создана</span><span>${Utils.fmtDate(c?.created_at)}</span></div>
+      </div>
+      <div class="glass">
+        <div class="section-title">📊 Статистика</div>
+        <div class="profile-row"><span>Получено</span><span style="color:var(--success);font-weight:700">+${u.total_earned||0} NVC</span></div>
+        <div class="profile-row"><span>Потрачено</span><span style="color:var(--danger);font-weight:700">−${u.total_spent||0} NVC</span></div>
+        <div class="profile-row"><span>Рефералов</span><span style="font-weight:700">${u.referral_count||0}</span></div>
+      </div>
+    `;
+  },
+
+  _showModal(html){
+    const o=document.getElementById("modalOverlay"),b=document.getElementById("modalBody");
+    b.innerHTML=`<div class="modal-handle"></div>${html}`;
+    o.style.display="flex";
+    requestAnimationFrame(()=>o.classList.add("visible"));
+  },
+
+  closeModal(){
+    const o=document.getElementById("modalOverlay");
+    o.classList.remove("visible");
+    setTimeout(()=>o.style.display="none",300);
+  },
+
+  showTransferModal(){
+    Sound.click();
+    this._showModal(`
+      <div class="modal-title">📤 Перевод NVC</div>
+      <div class="form-group"><label class="form-label">Telegram ID получателя</label><input class="form-input" id="tTo" type="number" placeholder="123456789"/></div>
+      <div class="form-group"><label class="form-label">Сумма NVC</label><input class="form-input" id="tAmt" type="number" placeholder="50"/></div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Доступно: <b>${this.state.user.balance} NVC</b></div>
+      <button class="btn btn-primary" onclick="App.doTransfer()">📤 Перевести</button>
+    `);
+  },
+
+  showReceiveModal(){
+    Sound.click();
+    this._showModal(`
+      <div class="modal-title">📥 Получить NVC</div>
+      <div class="glass" style="text-align:center;margin-bottom:16px">
+        <div style="font-size:13px;color:var(--text2);margin-bottom:8px">Ваш ID</div>
+        <div style="font-size:36px;font-weight:900;color:var(--violet)">${this.state.uid}</div>
+      </div>
+      <button class="btn btn-primary" onclick="App.copyUID()">📋 Скопировать</button>
+    `);
+  },
+
+  showBuyModal(){
+    Sound.click();
+    this._showModal(`
+      <div class="modal-title">💫 Пополнить баланс</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Выберите пакет и отправьте Stars владельцу студии:</div>
+      ${CONFIG.STARS_RATES.map(r=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;margin-bottom:8px">
+          <div>
+            <div style="font-weight:700">⭐ ${r.stars} Stars</div>
+            ${r.label?`<div style="font-size:11px;color:var(--gold)">${r.label}</div>`:""}
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:20px;font-weight:900;color:var(--violet)">${r.nvc}</div>
+            <div style="font-size:11px;color:var(--text2)">NVC</div>
+          </div>
+        </div>
+      `).join("")}
+      <div style="font-size:12px;color:var(--text2);margin-top:12px;line-height:1.6">После оплаты напишите админу — баланс пополнится в течение часа.</div>
+    `);
+  },
+
+  showPayServicesModal(){
+    Sound.click();
+    this._showModal(`
+      <div class="modal-title">🛒 Оплата услуг</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px">💰 Баланс: <b>${this.state.user.balance} NVC</b></div>
+      ${Object.entries(CONFIG.PAID_SERVICES).map(([k,s])=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;margin-bottom:8px">
+          <div>
+            <div style="font-weight:600">${s.name}</div>
+            <div style="font-size:12px;color:var(--text2)">${s.price} NVC</div>
+          </div>
+          <button class="btn btn-primary" style="width:auto;padding:9px 16px;font-size:13px" onclick="App.payService('${k}','${s.name}',${s.price})">Оплатить</button>
+        </div>
+      `).join("")}
+    `);
+  },
+
+  async doTransfer(){
+    const to=parseInt(document.getElementById("tTo")?.value);
+    const amt=parseInt(document.getElementById("tAmt")?.value);
+    if(!to||!amt||amt<=0){Sound.error();return Utils.toast("❌ Заполните","error")}
+    if(to==this.state.uid){Sound.error();return Utils.toast("❌ Себе нельзя","error")}
+    if(amt>this.state.user.balance){Sound.error();return Utils.toast("❌ Мало NVC","error")}
+    this.closeModal();this._showPayAnim(amt,"transfer");
+    const toUser=await API.getUser(to);
+    if(!toUser){this._hidePayAnim();Sound.error();return Utils.toast("❌ Нет такого","error")}
+    const d=await API.get(CONFIG.BIN_USERS);
+    d.users[String(this.state.uid)].balance-=amt;
+    d.users[String(this.state.uid)].total_spent=(d.users[String(this.state.uid)].total_spent||0)+amt;
+    d.users[String(to)].balance+=amt;
+    d.users[String(to)].total_earned=(d.users[String(to)].total_earned||0)+amt;
+    await API.put(CONFIG.BIN_USERS,d);
+    await API.addTx(parseInt(this.state.uid),to,amt,"transfer",`Перевод → ${toUser.full_name}`);
+    this.state.user.balance-=amt;
+    this.state.transactions=await API.getUserTx(this.state.uid);
+    await Utils.sleep(2000);
+    this._hidePayAnim();Sound.transfer();
+    this.renderAll();Utils.toast(`✅ Отправлено ${amt} NVC!`,"success");
+  },
+
+  async payService(k,name,price){
+    if(this.state.user.balance<price){Sound.error();return Utils.toast(`❌ Нужно ${price}`,"error")}
+    this.closeModal();this._showPayAnim(price,"payment");
+    const nb=await API.updateBal(this.state.uid,-price,`Оплата: ${name}`);
+    this.state.user.balance=nb;
+    this.state.transactions=await API.getUserTx(this.state.uid);
+    await Utils.sleep(2200);
+    this._hidePayAnim();Sound.payment();
+    this.renderAll();Utils.toast(`✅ ${name} оплачена!`,"success");
+  },
+
+  async buyCard(tier){
+    const prices={starter:0,creative:200,elite:500};
+    const p=prices[tier];
+    if(this.state.user.balance<p){Sound.error();return Utils.toast(`❌ Нужно ${p} NVC`,"error")}
+    Sound.click();
+    const d=await API.get(CONFIG.BIN_USERS);
+    d.users[String(this.state.uid)].balance-=p;
+    d.users[String(this.state.uid)].total_spent=(d.users[String(this.state.uid)].total_spent||0)+p;
+    d.users[String(this.state.uid)].card_tier=tier;
+    await API.put(CONFIG.BIN_USERS,d);
+    this.state.user.balance-=p;
+    this.state.user.card_tier=tier;
+    this.state.card=await API.getCard(this.state.user.card_id);
+    Sound.payment();
+    this.renderAll();this.renderCards();
+    Utils.toast(`✅ ${tier} активирована!`,"success");
+  },
+
+  async copyUID(){
+    try{await navigator.clipboard.writeText(String(this.state.uid))}catch(e){}
+    Utils.toast("✅ Скопировано!","success");
+    this.closeModal();
+  },
+
+  _showPayAnim(amt,type){
+    const el=document.getElementById("payAnimation");
+    el.style.display="flex";
+    const titles={transfer:"Выполняем перевод...",payment:"Обрабатываем оплату..."};
+    el.innerHTML=`
+      <div style="text-align:center">
+        <div style="display:flex;align-items:center;justify-content:center;height:80px;margin-bottom:28px">
+          <div style="width:90px;height:56px;border-radius:12px;background:linear-gradient(135deg,#1E1B4B,#7C3AED);transform:rotate(-10deg) translateX(10px);box-shadow:0 12px 40px rgba(124,58,237,0.5);transition:all 1.2s cubic-bezier(.34,1.56,.64,1);z-index:1;position:relative" id="pA"></div>
+          <div style="width:90px;height:56px;border-radius:12px;background:linear-gradient(135deg,#1E1B4B,#C026D3);transform:rotate(10deg) translateX(-10px);box-shadow:0 12px 40px rgba(192,38,211,0.5);transition:all 1.2s cubic-bezier(.34,1.56,.64,1);position:relative" id="pB"></div>
+        </div>
+        <div style="font-size:56px;font-weight:900;color:#fff;line-height:1;text-shadow:0 0 50px rgba(167,139,250,0.8);margin-bottom:8px">${amt}</div>
+        <div style="font-size:20px;font-weight:700;color:rgba(167,139,250,0.7);letter-spacing:4px;margin-bottom:24px">NVC</div>
+        <div style="color:rgba(255,255,255,0.5);font-size:15px;margin-bottom:20px">${titles[type]||"Обработка..."}</div>
+        <div style="width:44px;height:44px;margin:0 auto;border:3px solid rgba(124,58,237,0.2);border-top-color:#7C3AED;border-radius:50%;animation:spin .7s linear infinite"></div>
+      </div>`;
+    setTimeout(()=>{
+      const a=document.getElementById("pA"),b=document.getElementById("pB");
+      if(a)a.style.transform="rotate(0deg) translateX(22px)";
+      if(b)b.style.transform="rotate(0deg) translateX(-22px)";
+    },200);
+  },
+
+  _hidePayAnim(){document.getElementById("payAnimation").style.display="none"},
+
+  _createStars(){
+    const bg=document.getElementById("bgStars");
+    for(let i=0;i<70;i++){
+      const s=document.createElement("div");
+      const sz=Math.random()*2+0.5,op=Math.random()*0.5+0.1;
+      s.style.cssText=`position:absolute;border-radius:50%;background:white;width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--op:${op};opacity:${op};animation:twinkle ${Math.random()*3+2}s infinite;animation-delay:${Math.random()*3}s`;
+      bg.appendChild(s);
+    }
+  },
+
+  _showApp(){
+    const l=document.getElementById("loader"),a=document.getElementById("app");
+    l.style.opacity="0";
+    setTimeout(()=>l.style.display="none",500);
+    a.style.display="block";
+    requestAnimationFrame(()=>a.classList.add("visible"));
+  },
+
+  _showError(msg){
+    document.getElementById("loader").innerHTML=`<div style="text-align:center;padding:40px"><div style="font-size:48px;margin-bottom:16px">⚠️</div><div style="color:rgba(255,255,255,0.6);font-size:15px;line-height:1.6;max-width:300px">${msg}</div></div>`;
+  }
+};
+
+document.addEventListener("DOMContentLoaded",()=>App.init());
+</script>
 </body>
 </html>
