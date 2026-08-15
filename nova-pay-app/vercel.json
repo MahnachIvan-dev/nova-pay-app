@@ -1,11 +1,8 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "index.html",
-      "use": "@vercel/static"
-    }
-  ],
+  "buildCommand": null,
+  "outputDirectory": ".",
+  "framework": null,
   "routes": [
     {
       "src": "/(.*)",
@@ -16,9 +13,14 @@
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "X-Frame-Options", "value": "ALLOWALL" },
-        { "key": "Content-Security-Policy", "value": "frame-ancestors *" }
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "ALLOWALL"
+        }
       ]
     }
   ]
